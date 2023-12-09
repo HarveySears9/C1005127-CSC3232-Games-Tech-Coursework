@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25c444bb33fab804796d5cd306d28489, type: 3}
+  m_Name: CompositeFlockingBehaviour
+  m_EditorClassIdentifier: 
+  behaviours:
+  - {fileID: 11400000, guid: ff2d1e57e6ea6f94fab2dc0c9de6c201, type: 2}
+  - {fileID: 11400000, guid: 0feaf3a00686761419094d8cd89368b5, type: 2}
+  - {fileID: 11400000, guid: 6bf06a4dc32908846961da74e84e31e2, type: 2}
+  - {fileID: 11400000, guid: 522ca990bcb564141b1c2e55ba3fd436, type: 2}
+  weights:
+  - 0.25
+  - 4
+  - 4
+  - 0.75
