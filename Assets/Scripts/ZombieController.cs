@@ -213,6 +213,11 @@ public class ZombieController : MonoBehaviour
 
         // Zombie gets back up again
         state = State.Wandering;
+        // Makes sure zombies dont follow player across the level
+        if(target == playerTarget)
+        {
+            InvokeRepeating("UpdateWanderingDestination", 0f, Random.Range(5f, 15f));
+        }
         spriteRenderer.sprite = spriteArray[0];
         this.GetComponent<Renderer>().sortingLayerID = SortingLayer.NameToID("Enemy");
         transform.GetChild(0).gameObject.SetActive(true);
