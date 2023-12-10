@@ -38,8 +38,16 @@ public class HandgunBullet : MonoBehaviour
             // Inform the GameManager about the bullet hitting an enemy
             FindObjectOfType<GameManager>().BulletHitEnemy(this);
 
-            // Call the ZombieController's ZombieHit method on the collided GameObject
-            collision.gameObject.GetComponent<ZombieController>().ZombieHit(tag);
+            // Call the Hit function for the enemy type the particles collided with
+
+            if (collision.gameObject.GetComponent<ZombieController>() != null)
+            {
+                collision.gameObject.GetComponent<ZombieController>().ZombieHit(tag);
+            }
+            else if (collision.gameObject.GetComponent<ZombieBat>() != null)
+            {
+                collision.gameObject.GetComponent<ZombieBat>().ZombieBatHit(tag);
+            }
         }
 
         // Destroy the bullet after the collision

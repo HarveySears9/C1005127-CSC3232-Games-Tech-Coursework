@@ -7,7 +7,7 @@ public class ZombieController : MonoBehaviour
 {
     private SpriteRenderer spriteRenderer;
     public Sprite[] spriteArray;
-    public int health = 10;
+    public float health = 10;
     public float knockbackForce = 15f;
 
     // needed for pathfinding
@@ -92,7 +92,7 @@ public class ZombieController : MonoBehaviour
     // Zombie deals damage to the player when colliding with the player
     void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Player"))
+        if (collision.gameObject.CompareTag("Player") || collision.gameObject.CompareTag("PlayerHead"))
         {
             Player player = collision.gameObject.GetComponent<Player>();
 
@@ -123,6 +123,7 @@ public class ZombieController : MonoBehaviour
             reachedEnd = false;
         }
 
+        // Calculates and applies force in the direction of the current waypoint
         Vector2 direction = ((Vector2)path.vectorPath[currentWaypoint] - (Vector2)GetComponent<Rigidbody2D>().position).normalized;
         Vector2 force = direction * speed * Time.deltaTime;
 
@@ -135,6 +136,7 @@ public class ZombieController : MonoBehaviour
             currentWaypoint++;
         }
 
+        // Keeps the enemy facing forwards
         if (force.x >= 0.01f)
         {
             spriteRenderer.flipX = false;
@@ -177,16 +179,20 @@ public class ZombieController : MonoBehaviour
             {
                 health--;
             }
+            else if (tag == "Flame")
+            {
+                health -= 0.05f;
+            }
             if (health <= 0)
             {
                 // Zombie can only die if it has no head
-                if (headState == HeadState.NoHead)
+                if (headState == HeadState.NoHead || tag == "Flame")
                 {
                     ZombieDead();
                 }
                 else
                 {
-                    // Ekse zombie is only temporarily downed
+                    // Else zombie is only temporarily downed
                     StartCoroutine(ZombieDowned());
                 }
             }
@@ -221,6 +227,7 @@ public class ZombieController : MonoBehaviour
         spriteRenderer.sprite = spriteArray[3];
         this.GetComponent<Renderer>().sortingLayerID = SortingLayer.NameToID("EnemyDead");
         transform.GetChild(1).gameObject.SetActive(false);
+        transform.GetChild(0).gameObject.SetActive(false);
         itemSpawner.DropItem(this.transform.position);
 
         // Increases amount of kills the player has gotten to use for the results screen

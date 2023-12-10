@@ -8,6 +8,7 @@ public class ItemSpawner : MonoBehaviour
     public GameObject handgunAmmoPrefab;
     public GameObject medkitPrefab;
     public GameObject shotgunAmmoPrefab;
+    public GameObject flameFuelPrefab;
 
     // This vaule is lowered from the Game Manager script when the game state progresses
     // This means zombies have a lower chance to drop items as you progress through the game
@@ -15,6 +16,7 @@ public class ItemSpawner : MonoBehaviour
 
     private int bulletsDropped = 10;
     private int shellsDropped = 10;
+    private int fuelDropped = 25;
 
     public void DropItem(Vector3 dropLocation)
     {
@@ -26,6 +28,7 @@ public class ItemSpawner : MonoBehaviour
         float handgunAmmoDropWeight = CalculateHandgunAmmoDropWeight();
         float medkitDropWeight = CalculateMedkitDropWeight();
         float shotgunAmmoDropWeight = CalculateShotgunAmmoDropWeight();
+        float flameFuelDropWeight = CalculateFlameFuelDropWeight();
 
         float totalOfWeights = handgunAmmoDropWeight + medkitDropWeight;
 
@@ -33,12 +36,17 @@ public class ItemSpawner : MonoBehaviour
         {
             totalOfWeights += shotgunAmmoDropWeight;
         }
+        if (player.hasFlameThrower)
+        {
+            totalOfWeights += flameFuelDropWeight;
+        }
 
         float probabilityPerWeight = probOfAllPossibleItems / totalOfWeights;
 
         float handgunAmmoDropProbability = probabilityPerWeight * handgunAmmoDropWeight;
         float medkitDropProbability = probabilityPerWeight * medkitDropWeight;
         float shotgunAmmoDropProbability = probabilityPerWeight * shotgunAmmoDropWeight;
+        float flameFuelDropProbability = probabilityPerWeight * flameFuelDropWeight;
 
         if (randomValue < handgunAmmoDropProbability)
         {
@@ -51,11 +59,41 @@ public class ItemSpawner : MonoBehaviour
             // Drop medkit
             droppedItem = Instantiate(medkitPrefab, dropLocation + new Vector3(0, 0.5f, 0), Quaternion.identity);
         }
-        else if (player.hasShotgun && randomValue < handgunAmmoDropProbability + medkitDropProbability + shotgunAmmoDropProbability)
+        else if (player.hasShotgun)
         {
-            // Drop shotgun ammo (only if shotgun has been picked up)
-            droppedItem = Instantiate(shotgunAmmoPrefab, dropLocation + new Vector3(0, 0.5f, 0), Quaternion.identity);
-            droppedItem.GetComponent<ShotgunAmmo>().ammoAmount = shellsDropped;
+            float probability;
+            if (!player.hasFlameThrower)
+            {
+                probability = handgunAmmoDropProbability + medkitDropProbability + shotgunAmmoDropProbability + flameFuelDropProbability;
+            }
+            else
+            {
+                probability = handgunAmmoDropProbability + medkitDropProbability + shotgunAmmoDropProbability;
+            }
+            if(randomValue < probability)
+            {
+                // Drop shotgun ammo (only if shotgun has been picked up)
+                droppedItem = Instantiate(shotgunAmmoPrefab, dropLocation + new Vector3(0, 0.5f, 0), Quaternion.identity);
+                droppedItem.GetComponent<ShotgunAmmo>().ammoAmount = shellsDropped;
+            }
+        }
+        else if (player.hasFlameThrower)
+        {
+            float probability;
+            if (!player.hasShotgun)
+            {
+                probability = handgunAmmoDropProbability + medkitDropProbability + shotgunAmmoDropProbability + flameFuelDropProbability;
+            }
+            else
+            {
+                probability = handgunAmmoDropProbability + medkitDropProbability + flameFuelDropProbability;
+            }
+            if (randomValue < probability)
+            {
+                // Drop flame thrower fuel (only if flame thrower has been picked up)
+                droppedItem = Instantiate(flameFuelPrefab, dropLocation + new Vector3(0, 0.5f, 0), Quaternion.identity);
+                droppedItem.GetComponent<FlameThrowerFuel>().fuelAmount = fuelDropped;
+            }
         }
         else
         {
@@ -107,6 +145,29 @@ public class ItemSpawner : MonoBehaviour
         }
 
         return ammoWeight;
+    }
+
+    private float CalculateFlameFuelDropWeight()
+    {
+        float ammoWeight = 0.5f;
+        int totalAmmo = (int)player.currentFlame + player.flameStockPile;
+
+        if (totalAmmo <= 50)
+        {
+            ammoWeight = 2f;
+            fuelDropped = Random.Range(50, 75);
+        }
+        else if (totalAmmo <= 100)
+        {
+            ammoWeight = 1f;
+            fuelDropped = Random.Range(25, 40);
+        }
+        else
+        {
+            fuelDropped = Random.Range(15, 25);
+        }
+
+            return ammoWeight;
     }
 
     private float CalculateMedkitDropWeight()

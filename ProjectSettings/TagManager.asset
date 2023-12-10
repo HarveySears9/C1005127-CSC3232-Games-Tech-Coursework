@@ -11,6 +11,8 @@ TagManager:
   - MinigameChangeSize
   - MinigameGoal
   - Win
+  - PlayerHead
+  - Flame
   layers:
   - Default
   - TransparentFX
@@ -26,7 +28,7 @@ TagManager:
   - EnemyHead
   - Obstacles
   - Item
-  - 
+  - EnemyBullet
   - 
   - 
   - 

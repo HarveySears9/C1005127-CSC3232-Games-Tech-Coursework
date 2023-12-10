@@ -32,6 +32,16 @@ public class Player : MonoBehaviour
     public int shotgunAmmoCapacity = 5;
     public int currentShotgunAmmo = 5;
 
+    public int flameStockPile = 50;
+    public int flameCapacity = 50;
+    public float currentFlame = 50;
+    public float fuelConsumptionRate = 10f;
+    public ParticleSystem flamethrowerParticles;
+    public UnityEngine.Rendering.Universal.Light2D flamethrowerLight;
+    public float fadeDuration = 0.25f;
+    private bool isFlamethrowerFiring = false;
+
+
     // Medkit variables
     public int currentMedkits = 0;
     public int maxMedkits = 5;
@@ -40,6 +50,7 @@ public class Player : MonoBehaviour
     public bool hasRedKeycard = false;
     public bool hasBlueKeycard = false;
     public bool hasShotgun = false;
+    public bool hasFlameThrower = false;
 
     private new Rigidbody2D rigidbody;
     public float speed = 10.0f;
@@ -49,7 +60,7 @@ public class Player : MonoBehaviour
     private IInteractable interactableInstance;
 
     // enum that used to handle which weapon the player has equipped
-    private enum WeaponEquipped { Handgun, Shotgun };
+    private enum WeaponEquipped { Handgun, Shotgun, FlameThrower };
     WeaponEquipped weaponEquipped = WeaponEquipped.Handgun;
 
     private void Awake()
@@ -78,9 +89,15 @@ public class Player : MonoBehaviour
             // Shoots when pressing left mouse
             if (Input.GetKeyDown(KeyCode.Mouse0))
             {
-                if (!reloading)
+                if (!reloading && weaponEquipped != WeaponEquipped.FlameThrower)
                 {
                     Shoot();
+                }
+                else if (!reloading && weaponEquipped == WeaponEquipped.FlameThrower && !isFlamethrowerFiring)
+                {
+                    // Needed to simulate holding mouse 0 for continious firing of the flamethrower
+                    isFlamethrowerFiring = true;
+                    StartCoroutine(ShootFlameThrower());
                 }
             }
 
@@ -97,6 +114,11 @@ public class Player : MonoBehaviour
                     {
                         StartCoroutine(Reload());
                     }
+                    else if (weaponEquipped == WeaponEquipped.FlameThrower && currentFlame != flameCapacity && flameStockPile > 0)
+                    {
+                        isFlamethrowerFiring = false;
+                        StartCoroutine(Reload());
+                    }
                 }
             }
 
@@ -109,8 +131,9 @@ public class Player : MonoBehaviour
             // Switch weapons when pressing F
             if (Input.GetKeyDown(KeyCode.F))
             {
-                if(!reloading && hasShotgun)
+                if(!reloading)
                 {
+                    isFlamethrowerFiring = false;
                     SwitchWeapon();
                 }
             }
@@ -183,31 +206,91 @@ public class Player : MonoBehaviour
     public void PickupShotgun()
     {
         hasShotgun = true;
-        SwitchWeapon();
+        SwitchToShotgun();
+        UpdateAmmoCounter();
     }
 
-    // Toggles between shotgun and handgun
+    // Sets hasFlameThrower to true so player can equip the flame thrower
+    public void PickupFlameThrower()
+    {
+        hasFlameThrower = true;
+        SwitchToFlameThrower();
+        UpdateAmmoCounter();
+    }
+
+    // Toggles between shotgun and handgun and the flamethrower
     void SwitchWeapon()
     {
-        if(weaponEquipped == WeaponEquipped.Shotgun)
+        if(hasShotgun && hasFlameThrower)
         {
-            weapon.GetComponent<SpriteRenderer>().sprite = weaponSpriteArray[0];
-
-            hudWeaponSprite.sprite = weaponSpriteArray[0];
-
-            weaponEquipped = WeaponEquipped.Handgun;
+            if(weaponEquipped == WeaponEquipped.Handgun)
+            {
+                SwitchToShotgun();
+            }
+            else if(weaponEquipped == WeaponEquipped.Shotgun)
+            {
+                SwitchToFlameThrower();
+            }
+            else if(weaponEquipped == WeaponEquipped.FlameThrower)
+            {
+                SwitchToHandgun();
+            }
         }
-        else if(weaponEquipped == WeaponEquipped.Handgun)
+        else if(hasShotgun)
         {
-            weapon.GetComponent<SpriteRenderer>().sprite = weaponSpriteArray[1];
-            
-            hudWeaponSprite.sprite = weaponSpriteArray[1];
-
-            weaponEquipped = WeaponEquipped.Shotgun;
+            if (weaponEquipped == WeaponEquipped.Handgun)
+            {
+                SwitchToShotgun();
+            }
+            else if (weaponEquipped == WeaponEquipped.Shotgun)
+            {
+                SwitchToHandgun();
+            }
+        }
+        else if(hasFlameThrower)
+        {
+            if (weaponEquipped == WeaponEquipped.Handgun)
+            {
+                SwitchToFlameThrower();
+            }
+            else if (weaponEquipped == WeaponEquipped.FlameThrower)
+            {
+                SwitchToHandgun();
+            }
         }
 
         // Updates ammo counter to display current weapons ammo
         UpdateAmmoCounter();
+    }
+
+    // Sets current weapon to handgun
+    void SwitchToHandgun()
+    {
+        weapon.GetComponent<SpriteRenderer>().sprite = weaponSpriteArray[0];
+
+        hudWeaponSprite.sprite = weaponSpriteArray[0];
+
+        weaponEquipped = WeaponEquipped.Handgun;
+    }
+
+    // Sets current weapon to shotgun
+    void SwitchToShotgun()
+    {
+        weapon.GetComponent<SpriteRenderer>().sprite = weaponSpriteArray[1];
+
+        hudWeaponSprite.sprite = weaponSpriteArray[1];
+
+        weaponEquipped = WeaponEquipped.Shotgun;
+    }
+
+    // Sets current weapon to flamethrower
+    void SwitchToFlameThrower()
+    {
+        weapon.GetComponent<SpriteRenderer>().sprite = weaponSpriteArray[2];
+
+        hudWeaponSprite.sprite = weaponSpriteArray[2];
+
+        weaponEquipped = WeaponEquipped.FlameThrower;
     }
 
     void Shoot()
@@ -255,6 +338,83 @@ public class Player : MonoBehaviour
         }
     }
 
+    IEnumerator ShootFlameThrower()
+    {
+        while (isFlamethrowerFiring && currentFlame > 0)
+        {
+            // If the particle effect is not playing then it plays
+            // This means it will only be played once
+            // The particle system is set to loop so will play until code stops it
+            if (!flamethrowerParticles.isPlaying)
+            {
+                flamethrowerParticles.Play();
+                StartCoroutine(FadeLight(true));
+            }
+
+            // Decrease fuel over time
+            currentFlame -= fuelConsumptionRate * Time.deltaTime;
+            currentFlame = Mathf.Clamp(currentFlame, 0f, float.MaxValue);
+
+
+
+            UpdateAmmoCounter();
+
+            // When Mouse0 is released the while loop will end
+            if (Input.GetKeyUp(KeyCode.Mouse0))
+            {
+                isFlamethrowerFiring = false;
+            }
+
+            yield return null; // Wait for the next frame
+        }
+
+        // Stop flamethrower particles
+        StartCoroutine(FadeLight(false));
+        flamethrowerParticles.Stop();
+
+        // If fuel is depleted, initiate reload
+        if (currentFlame <= 0)
+        {
+            StartCoroutine(Reload());
+        }
+
+        // Set the firing flag to false
+        // Stops continued firing when reloading occurs to break the while loop
+        isFlamethrowerFiring = false;
+    }
+
+
+    IEnumerator FadeLight(bool fadeIn)
+    {
+        float elapsedTime = 0f;
+        float startIntensity = flamethrowerLight.intensity;
+        float targetIntensity;
+        // Set the target intensity
+        if (fadeIn)
+        { 
+            targetIntensity = 2.0f; 
+        }
+        else
+        {
+            targetIntensity = 0f;
+        }
+
+        while (elapsedTime < fadeDuration)
+        {
+            // Calculate the new intensity between start and target intensity
+            flamethrowerLight.intensity = Mathf.Lerp(startIntensity, targetIntensity, elapsedTime / fadeDuration);
+
+            // Increment time
+            elapsedTime += Time.deltaTime;
+
+            // Wait for the next frame
+            yield return null;
+        }
+
+        // set intensity to target intesity
+        flamethrowerLight.intensity = targetIntensity;
+    }
+
     // Reloads gun after a time delay
     IEnumerator Reload()
     {
@@ -294,6 +454,21 @@ public class Player : MonoBehaviour
                 shotgunAmmoStockPile = 0;
             }
         }
+        if (weaponEquipped == WeaponEquipped.FlameThrower)
+        {
+            if (flameStockPile >= flameCapacity)
+            {
+                float temp = flameCapacity - currentFlame;
+                flameStockPile -= (int)temp;
+
+                currentFlame = flameCapacity;
+            }
+            else
+            {
+                currentFlame = flameStockPile;
+                flameStockPile = 0;
+            }
+        }
 
         UpdateAmmoCounter();
 
@@ -310,6 +485,11 @@ public class Player : MonoBehaviour
         }else if(weaponEquipped == WeaponEquipped.Shotgun)
         {
             ammoText.text = currentShotgunAmmo + "/" + shotgunAmmoStockPile;
+        }
+        else if (weaponEquipped == WeaponEquipped.FlameThrower)
+        {
+            float temp = Mathf.RoundToInt(currentFlame);
+            ammoText.text = temp + "/" + flameStockPile;
         }
     }
 
@@ -380,6 +560,7 @@ public class Player : MonoBehaviour
         this.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
         rigidbody.drag = 25;
         GetComponent<Collider2D>().enabled = false;
+        GetComponentInChildren<Collider2D>().enabled = false;
         InventoryScreen.isPaused = true;
         yield return new WaitForSeconds(5f);
         InventoryScreen.isPaused = false;

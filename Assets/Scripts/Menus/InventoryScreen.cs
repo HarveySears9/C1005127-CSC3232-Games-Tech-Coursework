@@ -14,6 +14,7 @@ public class InventoryScreen : MonoBehaviour
     public GameObject medkitScreenUI;
     public GameObject ammoScreenUI;
     public GameObject shotgunAmmoScreenUI;
+    public GameObject flameFuelScreenUI;
     public GameObject blueKeycardScreenUI;
     public GameObject redKeycardScreenUI;
 
@@ -35,6 +36,7 @@ public class InventoryScreen : MonoBehaviour
     [SerializeField] private TextMeshProUGUI medkitText;
     [SerializeField] private TextMeshProUGUI ammoText;
     [SerializeField] private TextMeshProUGUI shotgunAmmoText;
+    [SerializeField] private TextMeshProUGUI flameFuelText;
     [SerializeField] private TextMeshProUGUI blueKeycardText;
     [SerializeField] private TextMeshProUGUI redKeycardText;
 
@@ -42,11 +44,13 @@ public class InventoryScreen : MonoBehaviour
     [SerializeField] private GameObject blueKeycardIcon;
     [SerializeField] private GameObject redKeycardIcon;
     [SerializeField] private GameObject shotgunIcon;
+    [SerializeField] private GameObject flameFuelIcon;
 
     // UI Text for sub menus
     [SerializeField] private TextMeshProUGUI medkitScreenText;
     [SerializeField] private TextMeshProUGUI ammoScreenText;
     [SerializeField] private TextMeshProUGUI shotgunAmmoScreenText;
+    [SerializeField] private TextMeshProUGUI flameFuelScreenText;
 
     // Update is called once per frame
     void Update()
@@ -73,6 +77,7 @@ public class InventoryScreen : MonoBehaviour
         medkitScreenUI.SetActive(false);
         ammoScreenUI.SetActive(false);
         shotgunAmmoScreenUI.SetActive(false);
+        flameFuelScreenUI.SetActive(false);
         blueKeycardScreenUI.SetActive(false);
         redKeycardScreenUI.SetActive(false);
 
@@ -132,6 +137,16 @@ public class InventoryScreen : MonoBehaviour
                 (player.currentShotgunAmmo + player.shotgunAmmoStockPile);
         }
         else { shotgunIcon.SetActive(false); }
+        // Display or hide the flame fuel icon and update shotgun ammo text
+        if (player.hasFlameThrower)
+        {
+            flameFuelIcon.SetActive(true);
+            flameFuelText.text = "Flame Fuel: " +
+            (int)player.currentFlame + "/" + player.flameStockPile;
+            flameFuelScreenText.text = "Flame Fuel: " +
+                ((int)player.currentFlame + player.flameStockPile);
+        }
+        else { flameFuelIcon.SetActive(false); }
     }
 
     // Use medkit and restore health
