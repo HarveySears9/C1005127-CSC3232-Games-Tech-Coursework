@@ -7808,7 +7808,7 @@ MonoBehaviour:
   hasRedKeycard: 0
   hasBlueKeycard: 0
   hasShotgun: 0
-  hasFlameThrower: 1
+  hasFlameThrower: 0
   speed: 10
 --- !u!50 &303026959
 Rigidbody2D:
